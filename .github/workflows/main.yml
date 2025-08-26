@@ -1,0 +1,65 @@
+name: Dynatrace Health Check
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  report-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send start event to Dynatrace 🚀
+        uses: dynatrace-oss/dynatrace-github-action@v9
+        with:
+          url: ${{ secrets.DT_URL }}
+          token: ${{ secrets.DT_TOKEN }}
+          events: |
+            - title: "GitHub Actions Workflow Started"
+              type: "CUSTOM_INFO"
+              entitySelector: "type(SERVICE),entityName(MyDemoService)"
+              properties:
+                source: "GitHub Actions"
+                repository: "${{ github.repository }}"
+                workflow: "${{ github.workflow }}"
+                runId: "${{ github.run_id }}"
+                status: "Started"
+      
+      # Your application build, test, and deployment steps would go here
+      # For this demo, you can add a simple script step
+      - name: Dummy Build Step
+        run: echo "Simulating a successful build..."
+
+      - name: Send success event to Dynatrace ✅
+        if: success()
+        uses: dynatrace-oss/dynatrace-github-action@v9
+        with:
+          url: ${{ secrets.DT_URL }}
+          token: ${{ secrets.DT_TOKEN }}
+          events: |
+            - title: "GitHub Actions Workflow Succeeded"
+              type: "CUSTOM_INFO"
+              entitySelector: "type(SERVICE),entityName(MyDemoService)"
+              properties:
+                source: "GitHub Actions"
+                repository: "${{ github.repository }}"
+                workflow: "${{ github.workflow }}"
+                runId: "${{ github.run_id }}"
+                status: "Succeeded"
+      
+      - name: Send failure event to Dynatrace ❌
+        if: failure()
+        uses: dynatrace-oss/dynatrace-github-action@v9
+        with:
+          url: ${{ secrets.DT_URL }}
+          token: ${{ secrets.DT_TOKEN }}
+          events: |
+            - title: "GitHub Actions Workflow Failed"
+              type: "ERROR_EVENT"
+              entitySelector: "type(SERVICE),entityName(MyDemoService)"
+              properties:
+                source: "GitHub Actions"
+                repository: "${{ github.repository }}"
+                workflow: "${{ github.workflow }}"
+                runId: "${{ github.run_id }}"
+                status: "Failed"
